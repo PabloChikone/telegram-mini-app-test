@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataLens Дашборд</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #222);
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto;
+        }
+        
+        .header { 
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-button {
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-button:active {
+            opacity: 0.7;
+        }
+        
+        .back-button span {
+            font-size: 18px;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #8E24AA;
+        }
+        
+        .datalens-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+            height: calc(100vh - 140px);
+            min-height: 500px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .info-panel {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .info-panel .dot {
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .refresh-button {
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            margin-left: auto;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 30px 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            border-radius: 12px;
+        }
+        
+        .hint {
+            background: rgba(142, 36, 170, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        .theme-toggle {
+            display: flex;
+            gap: 8px;
+            margin-left: 8px;
+        }
+        
+        .theme-btn {
+            background: none;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .theme-btn.active {
+            background: #8E24AA;
+            color: white;
+            border-color: #8E24AA;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="goBack()">
+                <span>←</span> Назад
+            </button>
+            <div class="header-title">
+                <span>📊 DataLens</span>
+            </div>
+            <div style="width: 60px;"></div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div>Загрузка дашборда DataLens...</div>
+            <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Пожалуйста, подождите</div>
+        </div>
+        
+        <div id="error" class="error-message" style="display: none;"></div>
+        
+        <div id="content" style="display: none;">
+            <div class="datalens-container" id="datalens-frame-container">
+                <!-- iframe будет добавлен через JS -->
+            </div>
+            
+            <div class="info-panel">
+                <span class="dot"></span>
+                <span>Дашборд от DataLens</span>
+                
+                <div class="theme-toggle">
+                    <button class="theme-btn active" data-theme="light" onclick="setTheme('light')">☀️ Светлая</button>
+                    <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">🌙 Темная</button>
+                </div>
+                
+                <button class="refresh-button" onclick="refreshDashboard()">↻ Обновить</button>
+                
+                <div class="hint" style="width:100%; margin-top:8px;">
+                    ℹ️ Дашборд обновляется автоматически каждые 30 секунд
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        // ID дашборда из вашей ссылки (извлекаем из URL)
+        const DASHBOARD_ID = 'deyua7epvkn2x'; // ID из вашей ссылки
+        
+        // Базовый URL для встраивания (правильный домен!)
+        const DATALENS_BASE = 'https://datalens.yandex/';
+        
+        let currentTheme = 'light';
+        
+        function getDashboardUrl(theme = 'light') {
+            // Формируем URL с правильными параметрами для встраивания
+            return `${DATALENS_BASE}${DASHBOARD_ID}?` +
+                `_embedded=1` + // Скрываем панель навигации
+                `&_no_controls=1` + // Скрываем меню
+                `&_lang=ru` + // Язык русский
+                `&_theme=${theme}` + // Тема (light/dark)
+                `&_autoupdate=30` + // Автообновление каждые 30 секунд
+                `&_no_scroll=0` + // Разрешаем скролл
+                `&age_group_tjcp=` + // Ваши параметры фильтрации
+                `&gender_e8cw=` +
+                `&848668f0-1dea-11f1-ac6c-d74ab74a3d82=` +
+                `&ca491d80-1ded-11f1-ac6c-d74ab74a3d82=__interval___relative_-7d___relative_-0d`;
+        }
+        
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+        
+        function setTheme(theme) {
+            currentTheme = theme;
+            
+            // Обновляем активные кнопки
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.theme === theme) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Перезагружаем дашборд с новой темой
+            refreshDashboard();
+        }
+        
+        function loadDashboard() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            
+            try {
+                const container = document.getElementById('datalens-frame-container');
+                container.innerHTML = ''; // Очищаем контейнер
+                
+                // Создаем iframe
+                const iframe = document.createElement('iframe');
+                iframe.src = getDashboardUrl(currentTheme);
+                iframe.allow = 'fullscreen';
+                iframe.setAttribute('allowfullscreen', 'true');
+                
+                // Устанавливаем заголовки для iframe
+                iframe.referrerPolicy = 'no-referrer-when-downgrade';
+                iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals';
+                
+                // Обработка загрузки iframe
+                iframe.onload = function() {
+                    console.log('Дашборд DataLens загружен');
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                    
+                    // Пробуем отправить сообщение в iframe для настройки темы Telegram
+                    try {
+                        iframe.contentWindow.postMessage({
+                            type: 'telegram-theme',
+                            theme: tg.themeParams
+                        }, '*');
+                    } catch (e) {
+                        console.log('Не удалось отправить тему в iframe');
+                    }
+                };
+                
+                iframe.onerror = function(e) {
+                    console.error('Ошибка загрузки iframe:', e);
+                    throw new Error('Не удалось загрузить дашборд');
+                };
+                
+                container.appendChild(iframe);
+                
+                // Таймаут на случай, если iframe долго грузится
+                const timeoutId = setTimeout(() => {
+                    if (document.getElementById('loading').style.display !== 'none') {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('error').style.display = 'block';
+                        document.getElementById('error').innerHTML = `
+                            <strong>❌ Таймаут загрузки</strong><br>
+                            Дашборд загружается слишком долго<br>
+                            <small>Проверьте подключение к интернету</small><br>
+                            <button onclick="loadDashboard()" style="margin-top:15px; padding:10px 20px; background:#8E24AA; color:white; border:none; border-radius:6px;">Повторить</button>
+                        `;
+                    }
+                }, 20000); // 20 секунд таймаут
+                
+                // Очищаем таймаут при успешной загрузке
+                iframe.addEventListener('load', () => clearTimeout(timeoutId));
+                
+            } catch (error) {
+                console.error('Ошибка загрузки дашборда:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `
+                    <strong>❌ Ошибка загрузки</strong><br>
+                    ${error.message}<br>
+                    <button onclick="loadDashboard()" style="margin-top:15px; padding:10px 20px; background:#8E24AA; color:white; border:none; border-radius:6px;">Повторить</button>
+                `;
+            }
+        }
+        
+        function refreshDashboard() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // Очищаем и перезагружаем iframe
+            const container = document.getElementById('datalens-frame-container');
+            container.innerHTML = '';
+            
+            // Небольшая задержка для визуального эффекта
+            setTimeout(() => {
+                loadDashboard();
+            }, 300);
+        }
+        
+        // Загружаем дашборд при старте
+        loadDashboard();
+        
+        // Настраиваем главную кнопку Telegram
+        tg.MainButton.setText('На главную');
+        tg.MainButton.onClick(() => {
+            window.location.href = 'index.html';
+        });
+        tg.MainButton.show();
+        
+        // Обновление при возврате на страницу
+        window.addEventListener('focus', function() {
+            console.log('Страница в фокусе');
+            // Можно проверить актуальность данных
+        });
+        
+        // Обработка сообщений от iframe (если DataLens их отправляет)
+        window.addEventListener('message', function(event) {
+            console.log('Получено сообщение:', event.data);
+            // Здесь можно обрабатывать сообщения от DataLens
+        });
+        
+        // Проверка соединения с DataLens
+        function checkDatalensConnection() {
+            fetch('https://datalens.yandex/api/ping', { 
+                mode: 'no-cors',
+                cache: 'no-cache'
+            }).catch(e => console.log('DataLens ping:', e));
+        }
+        
+        checkDatalensConnection();
+    </script>
+</body>
+</html>

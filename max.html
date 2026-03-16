@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAX Дашборд</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #222);
+            padding: 16px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        .header { 
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-button {
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-button:active {
+            opacity: 0.7;
+        }
+        
+        .back-button span {
+            font-size: 18px;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #1E88E5;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-card {
+            background: var(--tg-theme-button-color, #1E88E5);
+            color: var(--tg-theme-button-text-color, white);
+            padding: 12px 8px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .stat-card.active {
+            opacity: 1;
+            box-shadow: 0 0 0 2px var(--tg-theme-text-color, black), 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .stat-label { font-size: 12px; margin-bottom: 4px; opacity: 0.9; }
+        .stat-value { font-size: 20px; font-weight: bold; }
+        .stat-small { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+        
+        .chart-container {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            height: 300px;
+        }
+        
+        .details-table {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .details-table h3 {
+            margin-bottom: 12px;
+            color: #1E88E5;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        th { 
+            font-weight: 600;
+            background: rgba(30, 136, 229, 0.1);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            border-radius: 12px;
+        }
+        
+        .update-time {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666);
+            margin-top: 4px;
+        }
+        
+        .summary-stats {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .total-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1E88E5;
+        }
+        
+        .total-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="goBack()">
+                <span>←</span> Назад
+            </button>
+            <div class="header-title">
+                <span>📈 MAX Дашборд</span>
+            </div>
+            <div style="width: 60px;"></div>
+        </div>
+        
+        <div id="loading" class="loading">Загрузка данных...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="content" style="display: none;">
+            <div class="summary-stats">
+                <span class="total-label">Всего ТМК за всё время:</span>
+                <span class="total-value" id="total-all">-</span>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card" data-period="today" onclick="setPeriod('today')">
+                    <div class="stat-label">Сегодня</div>
+                    <div class="stat-value" id="today-value">-</div>
+                    <div class="stat-small" id="today-avg">ср. -</div>
+                </div>
+                <div class="stat-card" data-period="week" onclick="setPeriod('week')">
+                    <div class="stat-label">Неделя</div>
+                    <div class="stat-value" id="week-value">-</div>
+                    <div class="stat-small" id="week-avg">ср. -</div>
+                </div>
+                <div class="stat-card" data-period="month" onclick="setPeriod('month')">
+                    <div class="stat-label">Месяц</div>
+                    <div class="stat-value" id="month-value">-</div>
+                    <div class="stat-small" id="month-avg">ср. -</div>
+                </div>
+                <div class="stat-card" data-period="quarter" onclick="setPeriod('quarter')">
+                    <div class="stat-label">Квартал</div>
+                    <div class="stat-value" id="quarter-value">-</div>
+                    <div class="stat-small" id="quarter-avg">ср. -</div>
+                </div>
+                <div class="stat-card" data-period="year" onclick="setPeriod('year')">
+                    <div class="stat-label">Год</div>
+                    <div class="stat-value" id="year-value">-</div>
+                    <div class="stat-small" id="year-avg">ср. -</div>
+                </div>
+                <div class="stat-card" data-period="all" onclick="setPeriod('all')">
+                    <div class="stat-label">Всего</div>
+                    <div class="stat-value" id="all-value">-</div>
+                    <div class="stat-small" id="all-days">дней -</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="tmkChart"></canvas>
+            </div>
+            
+            <div class="details-table">
+                <h3>📋 Детальные данные за период</h3>
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Кол-во</th>
+                            <th>Накопительно</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+                <div id="lastUpdate" class="update-time" style="margin-top: 12px; text-align: right;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        let chart = null;
+        let fullData = null;
+        let currentPeriod = 'month';
+        
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+        
+        function getStartDate(period) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            switch(period) {
+                case 'today':
+                    return today;
+                case 'week':
+                    const weekAgo = new Date(today);
+                    weekAgo.setDate(today.getDate() - 7);
+                    return weekAgo;
+                case 'month':
+                    const monthAgo = new Date(today);
+                    monthAgo.setMonth(today.getMonth() - 1);
+                    return monthAgo;
+                case 'quarter':
+                    const quarterAgo = new Date(today);
+                    quarterAgo.setMonth(today.getMonth() - 3);
+                    return quarterAgo;
+                case 'year':
+                    const yearAgo = new Date(today);
+                    yearAgo.setFullYear(today.getFullYear() - 1);
+                    return yearAgo;
+                case 'all':
+                default:
+                    return null;
+            }
+        }
+        
+        function filterDataByPeriod(data, period) {
+            if (!data || !data.length) return [];
+            
+            const startDate = getStartDate(period);
+            if (!startDate) return data;
+            
+            return data.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= startDate;
+            });
+        }
+        
+        function calculateCumulative(data) {
+            let cumulative = 0;
+            return data.map(item => {
+                cumulative += item.value;
+                return {
+                    ...item,
+                    cumulative: cumulative
+                };
+            });
+        }
+        
+        async function loadData() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            
+            try {
+                const statsUrl = 'https://pablochikone.github.io/telegram-mini-app/stats.json';
+                const response = await fetch(statsUrl + '?t=' + Date.now());
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Данные загружены:', data);
+                
+                if (data && data.periods && data.chart_data) {
+                    fullData = data;
+                    updateUI();
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                } else {
+                    throw new Error('Некорректный формат данных');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `
+                    <strong>❌ Ошибка загрузки данных</strong><br>
+                    ${error.message}<br>
+                    <button onclick="loadData()" style="margin-top:10px; padding:8px 16px; background:#1E88E5; color:white; border:none; border-radius:6px;">Повторить</button>
+                `;
+            }
+        }
+        
+        function updateUI() {
+            if (!fullData) return;
+            
+            document.getElementById('lastUpdate').innerHTML = 
+                `Обновлено: ${fullData.last_updated}`;
+            
+            document.getElementById('total-all').textContent = 
+                fullData.periods.all.total.toLocaleString('ru-RU');
+            
+            for (let [period, data] of Object.entries(fullData.periods)) {
+                const valueEl = document.getElementById(`${period}-value`);
+                if (valueEl) {
+                    valueEl.textContent = data.total.toLocaleString('ru-RU');
+                }
+                
+                if (period === 'all') {
+                    const daysEl = document.getElementById('all-days');
+                    if (daysEl) daysEl.textContent = `дней: ${data.days}`;
+                } else {
+                    const avgEl = document.getElementById(`${period}-avg`);
+                    if (avgEl) avgEl.textContent = `ср. ${data.avg}`;
+                }
+            }
+            
+            updateChartAndTable(currentPeriod);
+            
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.dataset.period === currentPeriod) {
+                    card.classList.add('active');
+                }
+            });
+        }
+        
+        function updateChartAndTable(period) {
+            if (!fullData || !fullData.chart_data) return;
+            
+            console.log('Обновление для периода:', period);
+            
+            let filteredData = filterDataByPeriod(fullData.chart_data, period);
+            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            console.log('Отфильтровано записей:', filteredData.length);
+            
+            const dataWithCumulative = calculateCumulative(filteredData);
+            updateTable(dataWithCumulative);
+            updateChart(filteredData);
+        }
+        
+        function updateTable(chartData) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            if (!chartData || chartData.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 3;
+                cell.textContent = 'Нет данных за выбранный период';
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                return;
+            }
+            
+            chartData.slice().reverse().forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = item.date;
+                row.insertCell().textContent = item.value.toLocaleString('ru-RU');
+                row.insertCell().textContent = item.cumulative.toLocaleString('ru-RU');
+                
+                if (index === 0) {
+                    row.style.fontWeight = 'bold';
+                    row.style.background = 'rgba(30, 136, 229, 0.05)';
+                }
+            });
+        }
+        
+        function updateChart(chartData) {
+            const ctx = document.getElementById('tmkChart').getContext('2d');
+            
+            if (chart) chart.destroy();
+            
+            if (!chartData || chartData.length === 0) {
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Нет данных'],
+                        datasets: [{
+                            label: 'Успешные ТМК',
+                            data: [0],
+                            borderColor: '#1E88E5',
+                            backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+                return;
+            }
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => d.date),
+                    datasets: [{
+                        label: 'Успешные ТМК',
+                        data: chartData.map(d => d.value),
+                        borderColor: '#1E88E5',
+                        backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#1E88E5',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Кол-во: ${context.raw.toLocaleString('ru-RU')}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)',
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('ru-RU');
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 8,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            bottom: 10
+                        }
+                    }
+                }
+            });
+        }
+        
+        function setPeriod(period) {
+            console.log('Выбран период:', period);
+            currentPeriod = period;
+            
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.dataset.period === period) {
+                    card.classList.add('active');
+                }
+            });
+            
+            updateChartAndTable(period);
+        }
+        
+        loadData();
+        
+        setInterval(loadData, 5 * 60 * 1000);
+        
+        tg.MainButton.setText('На главную');
+        tg.MainButton.onClick(() => {
+            window.location.href = 'index.html';
+        });
+        tg.MainButton.show();
+        
+        window.addEventListener('popstate', function(event) {
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

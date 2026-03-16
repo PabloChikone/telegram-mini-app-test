@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Технические задания - Дашборд</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #222);
+            padding: 16px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        .header { 
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-button {
+            background: var(--tg-theme-button-color, #FB8C00);
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-button:active {
+            opacity: 0.7;
+        }
+        
+        .back-button span {
+            font-size: 18px;
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #FB8C00;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #FB8C00;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            color: #FB8C00;
+        }
+        
+        /* ВАРИАНТ 1: Канбан-доска со статусами */
+        .kanban-board {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .status-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .status-chip {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .kanban-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        
+        .kanban-item {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        
+        .kanban-item:hover {
+            transform: translateX(4px);
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .item-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .item-badge {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            font-weight: 500;
+        }
+        
+        .item-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #FB8C00;
+            border-radius: 3px;
+            width: 0%;
+        }
+        
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .item-link {
+            color: #FB8C00;
+            text-decoration: none;
+            font-size: 10px;
+        }
+        
+        /* ВАРИАНТ 2: Сетка с карточками и круговыми индикаторами */
+        .grid-dashboard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            color: white;
+        }
+        
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-bubble {
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            opacity: 0.9;
+        }
+        
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .circular-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .circular-progress {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(#4CAF50 0deg, #4CAF50 0deg, #e0e0e0 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .circular-inner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .card-info {
+            flex: 1;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .card-status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.3);
+            display: inline-block;
+        }
+        
+        /* ВАРИАНТ 3: Аккордеон с детализацией */
+        .accordion-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+        
+        .accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .accordion-item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .accordion-header {
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .accordion-header:hover {
+            background: #f5f5f5;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .accordion-title {
+            flex: 1;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .accordion-icon {
+            color: #999;
+            transition: transform 0.2s;
+        }
+        
+        .accordion-content {
+            padding: 8px 12px 12px 30px;
+            font-size: 12px;
+            color: #666;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        
+        .accordion-item.active .accordion-content {
+            max-height: 300px;
+            padding: 12px 12px 12px 30px;
+        }
+        
+        .accordion-item.active .accordion-icon {
+            transform: rotate(90deg);
+        }
+        
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .meta-label {
+            color: #999;
+        }
+        
+        .meta-value {
+            font-weight: 500;
+        }
+        
+        .link-icon {
+            color: #FB8C00;
+            text-decoration: none;
+        }
+        
+        .footer-note {
+            text-align: center;
+            padding: 12px;
+            font-size: 11px;
+            color: #999;
+            margin-top: 16px;
+        }
+
+        /* ВАРИАНТ 4: Timeline (временная шкала) */
+        .timeline-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .timeline-title {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .timeline-progress-bar {
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .timeline-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FB8C00, #FFB74D);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .timeline-track {
+            position: relative;
+            padding-left: 20px;
+            border-left: 3px solid #ddd;
+            margin-left: 10px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-left: 16px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 16px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px var(--tg-theme-button-color, #FB8C00);
+        }
+
+        .timeline-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .timeline-item-title {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .timeline-item-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #f0f0f0;
+        }
+
+        .timeline-item-status {
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .timeline-item-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        /* ВАРИАНТ 5: Flip-карточки */
+        .flip-dashboard {
+            margin-bottom: 24px;
+        }
+
+        .flip-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .flip-card {
+            background: transparent;
+            height: 140px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .flip-card-front {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+        }
+
+        .flip-card-front::after {
+            content: '👆 Нажмите';
+            position: absolute;
+            bottom: 8px;
+            font-size: 9px;
+            opacity: 0.5;
+        }
+
+        .flip-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .flip-title {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .flip-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FB8C00;
+        }
+
+        .flip-status-small {
+            font-size: 9px;
+            padding: 3px 8px;
+            border-radius: 8px;
+            margin-top: 6px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .flip-card-back {
+            background: white;
+            color: #333;
+            transform: rotateY(180deg);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .flip-back-title {
+            font-weight: 600;
+            font-size: 11px;
+            margin-bottom: 6px;
+            color: #FB8C00;
+        }
+
+        .flip-back-info {
+            font-size: 9px;
+            color: #666;
+            line-height: 1.4;
+            text-align: left;
+        }
+
+        .flip-back-meta {
+            margin-top: auto;
+            font-size: 8px;
+            color: #999;
+        }
+
+        /* ВАРИАНТ 6: Sparklines + метрики */
+        .sparkline-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .metric-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .metric-change {
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .metric-change.positive { color: #4CAF50; }
+        .metric-change.negative { color: #E57373; }
+
+        .sparkline-container {
+            margin-top: 8px;
+            height: 30px;
+        }
+
+        .sparkline-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-legend-custom {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 10px;
+        }
+
+        .legend-item-custom {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot-custom {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ВАРИАНТ 9: Мини-таблица */
+        .table-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .table-scroll {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .compact-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .compact-table th {
+            background: #FB8C00;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+        }
+
+        .compact-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .compact-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .compact-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            background: white;
+        }
+
+        .compact-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .compact-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .compact-table tr:hover td {
+            background: #f9f9f9;
+        }
+
+        .status-pill {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .progress-mini {
+            width: 60px;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-mini-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        .table-link {
+            color: #FB8C00;
+            text-decoration: none;
+        }
+
+        /* ВАРИАНТ 10: Горизонтальный скролл */
+        .scroll-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .scroll-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+        }
+
+        .scroll-card {
+            min-width: 160px;
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            scroll-snap-align: start;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .scroll-card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .scroll-card-title {
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .scroll-card-num {
+            font-size: 10px;
+            color: #999;
+        }
+
+        .scroll-progress {
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-bottom: 8px;
+        }
+
+        .scroll-status {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* ВАРИАНТ 11: Прогресс-круги */
+        .progress-circle-dashboard {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .circle-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .circle-item {
+            text-align: center;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .circle-ring {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: conic-gradient(white var(--deg), rgba(255,255,255,0.3) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 6px;
+        }
+
+        .circle-inner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circle-label {
+            font-size: 9px;
+            color: white;
+        }
+
+        /* ВАРИАНТ 12: Санвей-диаграмма */
+        .sunburst-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .sunburst-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            max-height: 280px;
+            overflow: hidden;
+        }
+
+        .sunburst-visual {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(#FFB74D 0deg 45deg, #4FC3F7 45deg 90deg, #81C784 90deg 135deg, #BA68C8 135deg 180deg, #FF8A65 180deg 225deg, #A1887F 225deg 270deg, #E57373 270deg 315deg, #4CAF50 315deg 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sunburst-center {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .sunburst-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sunburst-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .sunburst-item:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        /* ВАРИАНТ 13: Стек задач */
+        .stack-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stack-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px 0;
+        }
+
+        .stack-column {
+            min-width: 100px;
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .stack-header {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid;
+            text-align: center;
+        }
+
+        .stack-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stack-item {
+            font-size: 10px;
+            padding: 6px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ВАРИАНТ 14: Пузырьки */
+        .bubble-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            min-height: 200px;
+        }
+
+        .bubble-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            max-height: 250px;
+            overflow: hidden;
+        }
+
+        .bubble {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .bubble:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .bubble::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            white-space: nowrap;
+            color: #333;
+            font-weight: normal;
+        }
+
+        /* ВАРИАНТ 15: Галочки */
+        .checklist-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .checklist {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .checklist-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .checklist-item.checked .checklist-box {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .checklist-item.checked .checklist-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .checklist-text {
+            font-size: 11px;
+            flex: 1;
+        }
+
+        /* ВАРИАНТ 16: Столбчатая диаграмма */
+        .bar-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 180px;
+            padding: 10px 0;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .bar {
+            width: 24px;
+            background: linear-gradient(to top, #FB8C00, #FFB74D);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+            position: relative;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .bar-label {
+            font-size: 9px;
+            margin-top: 8px;
+            text-align: center;
+            color: #666;
+            max-width: 60px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ВАРИАНТ 17: Тепловая карта */
+        .heatmap-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(8, 1fr);
+            gap: 4px;
+        }
+
+        .heatmap-header {
+            font-size: 9px;
+            text-align: center;
+            padding: 4px;
+            font-weight: 500;
+        }
+
+        .heatmap-row-label {
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+        }
+
+        /* ВАРИАНТ 18: Звезды */
+        .star-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .star-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .star-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .star-icon {
+            font-size: 18px;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .star-icon.active {
+            color: #FFD700;
+        }
+
+        .star-info {
+            flex: 1;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .star-title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .star-meta {
+            font-size: 9px;
+            color: #999;
+        }
+
+        /* ВАРИАНТ 19: Прогресс-полосы */
+        .stripe-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stripe-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stripe-item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .stripe-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .stripe-bar {
+            height: 8px;
+            display: flex;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .stripe-segment {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        /* ВАРИАНТ 20: Компактный список */
+        .compact-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .compact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .compact-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .compact-row:hover {
+            background: #f0f0f0;
+        }
+
+        .compact-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .compact-title {
+            flex: 1;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .compact-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f5f5f5;
+        }
+
+        .compact-link {
+            color: #FB8C00;
+            font-size: 10px;
+        }
+
+        /* ВАРИАНТ 21: Рейтинг */
+        .rating-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .rating-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .rating-card {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .rating-rank {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FB8C00;
+            margin-bottom: 4px;
+        }
+
+        .rating-title {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .rating-stars {
+            font-size: 14px;
+            color: #FFD700;
+        }
+
+        .rating-meta {
+            font-size: 9px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        /* ВАРИАНТ 22: Волна */
+        .wave-dashboard {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 150px;
+            padding-bottom: 10px;
+        }
+
+        .wave-bar {
+            width: 12px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 4px 4px 0 0;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 20%; }
+            50% { height: 80%; }
+        }
+
+        .wave-labels {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .wave-label {
+            font-size: 8px;
+            opacity: 0.8;
+        }
+
+        .wave-list {
+            margin-top: 16px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .wave-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* ВАРИАНТ 23: Кольца статусов */
+        .ring-dashboard {
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .ring-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .ring-item {
+            position: relative;
+            width: 70px;
+            height: 70px;
+        }
+
+        .ring-svg {
+            transform: rotate(-90deg);
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: #eee;
+            stroke-width: 6;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s;
+        }
+
+        .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .ring-label {
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="goBack()">
+                <span>←</span> Назад
+            </button>
+            <div class="header-title">
+                <span>📋 Технические задания</span>
+            </div>
+            <div style="width: 60px;"></div>
+        </div>
+        
+        <!-- ВАРИАНТ 1: Канбан-доска -->
+        <div class="section-title">
+            <i class="fas fa-tasks"></i> Вариант 1: Канбан-доска
+        </div>
+        <div class="kanban-board" id="kanban-board">
+            <div class="status-filters" id="status-filters"></div>
+            <div class="kanban-items" id="kanban-items"></div>
+        </div>
+        
+        <!-- ВАРИАНТ 2: Сетка с круговыми индикаторами -->
+        <div class="section-title">
+            <i class="fas fa-chart-pie"></i> Вариант 2: Круговые индикаторы
+        </div>
+        <div class="grid-dashboard" id="grid-dashboard">
+            <div class="stats-summary" id="stats-summary"></div>
+            <div class="timeline-grid" id="timeline-grid"></div>
+        </div>
+
+        <!-- ВАРИАНТ 3: Аккордеон с детализацией -->
+        <div class="section-title">
+            <i class="fas fa-list-ul"></i> Вариант 3: Детальный аккордеон
+        </div>
+        <div class="accordion-dashboard" id="accordion-dashboard">
+            <div class="legend" id="legend"></div>
+            <div class="accordion" id="accordion"></div>
+        </div>
+        
+        <!-- ВАРИАНТ 4: Timeline -->
+        <div class="section-title">
+            <i class="fas fa-stream"></i> Вариант 4: Timeline
+        </div>
+        <div class="timeline-dashboard" id="timeline-dashboard">
+            <div class="timeline-header">
+                <span class="timeline-title">Прогресс работы</span>
+                <span id="timeline-percent" style="font-weight: bold; color: #FB8C00;">0%</span>
+            </div>
+            <div class="timeline-progress-bar">
+                <div class="timeline-progress-fill" id="timeline-progress" style="width: 0%"></div>
+            </div>
+            <div class="timeline-track" id="timeline-track"></div>
+        </div>
+
+        <!-- ВАРИАНТ 5: Flip-карточки -->
+        <div class="section-title">
+            <i class="fas fa-clone"></i> Вариант 5: Flip-карточки
+        </div>
+        <div class="flip-dashboard" id="flip-dashboard">
+            <div class="flip-grid" id="flip-grid"></div>
+        </div>
+
+        <!-- ВАРИАНТ 6: Sparklines + метрики -->
+        <div class="section-title">
+            <i class="fas fa-chart-line"></i> Вариант 6: Метрики со sparklines
+        </div>
+        <div class="sparkline-dashboard" id="sparkline-dashboard">
+            <div class="metrics-grid" id="metrics-grid"></div>
+            <div class="chart-legend-custom" id="chart-legend-custom"></div>
+        </div>
+        
+        <!-- ВАРИАНТ 9: Мини-таблица -->
+        <div class="section-title">
+            <i class="fas fa-table"></i> Вариант 9: Мини-таблица
+        </div>
+        <div class="table-dashboard" id="table-dashboard">
+            <div class="table-scroll">
+                <table class="compact-table" id="compact-table">
+                    <thead>
+                        <tr>
+                            <th>ТЗ</th>
+                            <th>Номер</th>
+                            <th>Статус</th>
+                            <th>Прогресс</th>
+                            <th>Ссылка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ВАРИАНТ 10: Горизонтальный скролл -->
+        <div class="section-title">
+            <i class="fas fa-arrows-alt-h"></i> Вариант 10: Горизонтальный скролл
+        </div>
+        <div class="scroll-dashboard" id="scroll-dashboard">
+            <div class="scroll-container" id="scroll-container"></div>
+        </div>
+
+        <!-- ВАРИАНТ 11: Прогресс-круги -->
+        <div class="section-title">
+            <i class="fas fa-circle-notch"></i> Вариант 11: Прогресс-круги
+        </div>
+        <div class="progress-circle-dashboard" id="progress-circle-dashboard">
+            <div class="circle-grid" id="circle-grid"></div>
+        </div>
+
+        <!-- ВАРИАНТ 12: Санвей-диаграмма -->
+        <div class="section-title">
+            <i class="fas fa-sun"></i> Вариант 12: Санвей-диаграмма
+        </div>
+        <div class="sunburst-dashboard" id="sunburst-dashboard">
+            <div class="sunburst-container">
+                <div class="sunburst-visual">
+                    <div class="sunburst-center" id="sunburst-center">16</div>
+                </div>
+                <div class="sunburst-list" id="sunburst-list"></div>
+            </div>
+        </div>
+
+        <!-- ВАРИАНТ 13: Стек задач -->
+        <div class="section-title">
+            <i class="fas fa-layer-group"></i> Вариант 13: Стек задач
+        </div>
+        <div class="stack-dashboard" id="stack-dashboard">
+            <div class="stack-container" id="stack-container"></div>
+        </div>
+
+        <!-- ВАРИАНТ 14: Пузырьки -->
+        <div class="section-title">
+            <i class="fas fa-circle"></i> Вариант 14: Пузырьки
+        </div>
+        <div class="bubble-dashboard" id="bubble-dashboard">
+            <div class="bubble-container" id="bubble-container"></div>
+        </div>
+
+        <!-- ВАРИАНТ 15: Галочки -->
+        <div class="section-title">
+            <i class="fas fa-check-square"></i> Вариант 15: Галочки
+        </div>
+        <div class="checklist-dashboard" id="checklist-dashboard">
+            <div class="checklist" id="checklist"></div>
+        </div>
+
+        <!-- ВАРИАНТ 16: Столбчатая диаграмма -->
+        <div class="section-title">
+            <i class="fas fa-chart-bar"></i> Вариант 16: Столбчатая диаграмма
+        </div>
+        <div class="bar-dashboard" id="bar-dashboard">
+            <div class="bar-chart" id="bar-chart"></div>
+        </div>
+
+        <!-- ВАРИАНТ 17: Тепловая карта -->
+        <div class="section-title">
+            <i class="fas fa-th"></i> Вариант 17: Тепловая карта
+        </div>
+        <div class="heatmap-dashboard" id="heatmap-dashboard">
+            <div class="heatmap-grid" id="heatmap-grid"></div>
+        </div>
+
+        <!-- ВАРИАНТ 18: Звезды -->
+        <div class="section-title">
+            <i class="fas fa-star"></i> Вариант 18: Звезды
+        </div>
+        <div class="star-dashboard" id="star-dashboard">
+            <div class="star-grid" id="star-grid"></div>
+        </div>
+
+        <!-- ВАРИАНТ 19: Прогресс-полосы -->
+        <div class="section-title">
+            <i class="fas fa-stream"></i> Вариант 19: Прогресс-полосы
+        </div>
+        <div class="stripe-dashboard" id="stripe-dashboard">
+            <div class="stripe-list" id="stripe-list"></div>
+        </div>
+
+        <!-- ВАРИАНТ 20: Компактный список -->
+        <div class="section-title">
+            <i class="fas fa-list"></i> Вариант 20: Компактный список
+        </div>
+        <div class="compact-dashboard" id="compact-dashboard">
+            <div class="compact-list" id="compact-list"></div>
+        </div>
+
+        <!-- ВАРИАНТ 21: Рейтинг -->
+        <div class="section-title">
+            <i class="fas fa-trophy"></i> Вариант 21: Рейтинг
+        </div>
+        <div class="rating-dashboard" id="rating-dashboard">
+            <div class="rating-container" id="rating-container"></div>
+        </div>
+
+        <!-- ВАРИАНТ 22: Волна -->
+        <div class="section-title">
+            <i class="fas fa-wave-square"></i> Вариант 22: Волна
+        </div>
+        <div class="wave-dashboard" id="wave-dashboard">
+            <div class="wave-container" id="wave-container"></div>
+            <div class="wave-labels" id="wave-labels"></div>
+            <div class="wave-list" id="wave-list"></div>
+        </div>
+
+        <!-- ВАРИАНТ 23: Кольца статусов -->
+        <div class="section-title">
+            <i class="fas fa-ring"></i> Вариант 23: Кольца статусов
+        </div>
+        <div class="ring-dashboard" id="ring-dashboard">
+            <div class="ring-container" id="ring-container"></div>
+        </div>
+        
+        <div class="footer-note">
+            <i class="fas fa-database"></i> Данные рандомизированы • 16 ТЗ • 8 статусов • 20 вариантов визуализации
+        </div>
+    </div>
+    
+    <script>
+        let tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand();
+            tg.ready();
+        }
+        
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+        
+        // Статусы ТЗ с цветами
+        const statuses = [
+            { name: 'Подготовка и инициация', color: '#FFB74D', progress: 10, order: 1 },
+            { name: 'Разработка первой версии', color: '#4FC3F7', progress: 25, order: 2 },
+            { name: 'Рыночный анализ', color: '#81C784', progress: 35, order: 3 },
+            { name: 'Внешняя экспертиза', color: '#BA68C8', progress: 50, order: 4 },
+            { name: 'Отработка замечаний', color: '#FF8A65', progress: 65, order: 5 },
+            { name: 'Актуализация стоимости', color: '#A1887F', progress: 80, order: 6 },
+            { name: 'Финальное утверждение', color: '#E57373', progress: 95, order: 7 },
+            { name: 'Завершено', color: '#4CAF50', progress: 100, order: 8 }
+        ];
+        
+        // Данные ТЗ
+        const tzItems = [
+            { id: 1, title: 'Голосовое заполнение', number: '14-921/2026', link: '#', status: 'Подготовка и инициация', notes: 'На паузе до внедрения ЕМИС' },
+            { id: 2, title: 'Обзвонщик', number: '-', link: '#', status: 'Рыночный анализ', notes: 'Версии от Т1, Софтлайн. Ждем Хусаинову' },
+            { id: 3, title: 'Импортозамещение', number: '26-4396', link: 'http://newpi.lenreg.ru/ctask/26-4396/show/', status: 'Внешняя экспертиза', notes: 'Пункты 4.4 и 4.6.3 с КЦР' },
+            { id: 4, title: 'Витрина', number: '-', link: '#', status: 'Финальное утверждение', notes: 'В ТЗ РС ЕГИСЗ +' },
+            { id: 5, title: 'Чат-бот', number: '-', link: '#', status: 'Рыночный анализ', notes: 'Запросы на КП (+ ИДС)' },
+            { id: 6, title: 'Фармаколог', number: '-', link: '#', status: 'Отработка замечаний', notes: 'Ждем ответ от Хусаиновой' },
+            { id: 7, title: 'СППРВ', number: '-', link: '#', status: 'Актуализация стоимости', notes: 'Запрос на КП + в СЭД' },
+            { id: 8, title: 'АРМ', number: '-', link: '#', status: 'Финальное утверждение', notes: 'Готовое ТЗ' },
+            { id: 9, title: 'Сопровождение ЕМИС', number: '26-16167', link: 'http://newpi.lenreg.ru/issue/26-16167/show/', status: 'Отработка замечаний', notes: 'Замечания Калинина' },
+            { id: 10, title: 'Сопровождение ЦАМИ', number: '26-16171', link: 'http://newpi.lenreg.ru/issue/26-16171/show/', status: 'Внешняя экспертиза', notes: 'Загружена новая версия' },
+            { id: 11, title: 'Сопровождение РС ЕГИСЗ', number: '26-4901', link: 'http://newpi.lenreg.ru/ctask/26-4901/show/', status: 'Разработка первой версии', notes: 'Загружено в АИС ПИ' },
+            { id: 12, title: 'Сопровождение ПДС СМП ЛО', number: '26-4813', link: 'http://newpi.lenreg.ru/ctask/26-4813/show/', status: 'Разработка первой версии', notes: 'Загружено в АИС ПИ' },
+            { id: 13, title: 'Интеграция ФРВИЧ', number: '-', link: '#', status: 'Подготовка и инициация', notes: 'Ждем от Кашпанова' },
+            { id: 14, title: 'Развитие ЦАМИ', number: '-', link: '#', status: 'Актуализация стоимости', notes: 'Ждем ответ от Ирины' },
+            { id: 15, title: 'Развитие Онкопомощь', number: '-', link: '#', status: 'Внешняя экспертиза', notes: 'Техлаб молчит' },
+            { id: 16, title: 'Развитие ЕМИС', number: '-', link: '#', status: 'Разработка первой версии', notes: 'Поговорить с БС' }
+        ];
+        
+        // Функция для получения случайного статуса
+        function getRandomStatus() {
+            const randomIndex = Math.floor(Math.random() * statuses.length);
+            return statuses[randomIndex].name;
+        }
+        
+        // Функция для получения статуса по названию
+        function getStatusInfo(statusName) {
+            return statuses.find(s => s.name === statusName) || statuses[0];
+        }
+        
+        // Инициализация данных со случайными статусами
+        const data = tzItems.map(item => ({
+            ...item,
+            status: getRandomStatus() // Случайный статус для демо
+        }));
+        
+        // ВАРИАНТ 1: Канбан-доска
+        function renderKanban() {
+            const filtersContainer = document.getElementById('status-filters');
+            const itemsContainer = document.getElementById('kanban-items');
+            
+            // Статус-фильтры (просто для красоты)
+            filtersContainer.innerHTML = statuses.map(s => 
+                `<span class="status-chip" style="border-left: 3px solid ${s.color}">${s.name}</span>`
+            ).join('');
+            
+            // Элементы
+            itemsContainer.innerHTML = data.map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="kanban-item" style="border-left-color: ${status.color}">
+                        <div class="item-header">
+                            <span class="item-title">${item.title}</span>
+                            <span class="item-badge">№${item.number}</span>
+                        </div>
+                        <div class="item-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${status.progress}%; background: ${status.color}"></div>
+                            </div>
+                            <span style="font-size: 10px; color: ${status.color}">${status.progress}%</span>
+                        </div>
+                        <div class="item-meta">
+                            <span>${item.status}</span>
+                            <a href="${item.link}" target="_blank" class="item-link">
+                                <i class="fas fa-external-link-alt"></i> Подробнее
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ВАРИАНТ 2: Круговые индикаторы
+        function renderCircular() {
+            const summaryContainer = document.getElementById('stats-summary');
+            const gridContainer = document.getElementById('timeline-grid');
+            
+            // Статистика по статусам
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+            
+            // Сводка
+            summaryContainer.innerHTML = `
+                <div class="stat-bubble">
+                    <div class="stat-number">16</div>
+                    <div class="stat-label">Всего ТЗ</div>
+                </div>
+                <div class="stat-bubble">
+                    <div class="stat-number">${Object.keys(statusCounts).length}</div>
+                    <div class="stat-label">Статусов</div>
+                </div>
+                <div class="stat-bubble">
+                    <div class="stat-number">${data.filter(d => d.status === 'Финальное утверждение').length}</div>
+                    <div class="stat-label">Готово</div>
+                </div>
+            `;
+            
+            // Карточки с круговыми индикаторами
+            gridContainer.innerHTML = data.slice(0, 10).map(item => {
+                const status = getStatusInfo(item.status);
+                const progress = status.progress;
+                const degrees = (progress * 360) / 100;
+                
+                return `
+                    <div class="circular-card">
+                        <div class="circular-progress" style="background: conic-gradient(${status.color} ${degrees}deg, rgba(255,255,255,0.2) ${degrees}deg)">
+                            <div class="circular-inner">${progress}%</div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-title">${item.title}</div>
+                            <span class="card-status" style="background: ${status.color}40; color: white">${item.status}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ВАРИАНТ 3: Аккордеон
+        function renderAccordion() {
+            const legendContainer = document.getElementById('legend');
+            const accordionContainer = document.getElementById('accordion');
+            
+            // Легенда
+            legendContainer.innerHTML = statuses.map(s => 
+                `<div class="legend-item">
+                    <span class="legend-color" style="background: ${s.color}"></span>
+                    <span>${s.name}</span>
+                </div>`
+            ).join('');
+            
+            // Аккордеон
+            accordionContainer.innerHTML = data.map((item, index) => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="accordion-item" onclick="toggleAccordion(this)">
+                        <div class="accordion-header">
+                            <span class="status-dot" style="background: ${status.color}"></span>
+                            <span class="accordion-title">${item.title}</span>
+                            <i class="fas fa-chevron-right accordion-icon"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="meta-row">
+                                <span class="meta-label">Номер:</span>
+                                <span class="meta-value">${item.number}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Статус:</span>
+                                <span class="meta-value" style="color: ${status.color}">${item.status}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Прогресс:</span>
+                                <span class="meta-value">${status.progress}%</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Заметки:</span>
+                                <span class="meta-value">${item.notes}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Ссылка:</span>
+                                <a href="${item.link}" target="_blank" class="link-icon">
+                                    <i class="fas fa-external-link-alt"></i> Открыть
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Функция для аккордеона
+        window.toggleAccordion = function(element) {
+            element.classList.toggle('active');
+        };
+
+        // ВАРИАНТ 4: Timeline
+        function renderTimeline() {
+            const trackContainer = document.getElementById('timeline-track');
+            const progressBar = document.getElementById('timeline-progress');
+            const progressText = document.getElementById('timeline-percent');
+
+            const sortedData = [...data].sort((a, b) => {
+                return getStatusInfo(a.status).order - getStatusInfo(b.status).order;
+            });
+
+            const avgProgress = Math.round(sortedData.reduce((sum, item) => 
+                sum + getStatusInfo(item.status).progress, 0) / sortedData.length);
+
+            progressBar.style.width = avgProgress + '%';
+            progressText.textContent = avgProgress + '%';
+
+            trackContainer.innerHTML = sortedData.map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-item-header">
+                            <span class="timeline-item-title">${item.title}</span>
+                            <span class="timeline-item-badge">${item.number || '—'}</span>
+                        </div>
+                        <div class="timeline-item-status" style="color: ${status.color}">
+                            ● ${item.status} (${status.progress}%)
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 5: Flip-карточки
+        function renderFlipCards() {
+            const gridContainer = document.getElementById('flip-grid');
+
+            gridContainer.innerHTML = data.slice(0, 8).map((item, index) => {
+                const status = getStatusInfo(item.status);
+                const icons = ['📋', '🎯', '⚡', '🔧', '📊', '🚀', '💡', '🎨'];
+                
+                return `
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div class="flip-icon">${icons[index]}</div>
+                                <div class="flip-title">${item.title}</div>
+                                <div class="flip-number">${item.number || '—'}</div>
+                                <span class="flip-status-small" style="background: ${status.color}30; color: ${status.color}">${status.progress}%</span>
+                            </div>
+                            <div class="flip-card-back">
+                                <div class="flip-back-title">${item.title}</div>
+                                <div class="flip-back-info">
+                                    <div><strong>Статус:</strong> ${item.status}</div>
+                                    <div><strong>Прогресс:</strong> ${status.progress}%</div>
+                                    <div style="margin-top: 4px; font-size: 8px;">${item.notes.substring(0, 60)}...</div>
+                                </div>
+                                <div class="flip-back-meta">${item.number || 'Без номера'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Генерация случайных данных для sparkline
+        function generateSparklineData(points = 12) {
+            return Array.from({length: points}, () => Math.floor(Math.random() * 100) + 20);
+        }
+
+        // Рисование sparkline на canvas
+        function drawSparkline(canvasId, data, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.parentElement.offsetWidth;
+            const height = canvas.height = 30;
+            
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+            
+            ctx.clearRect(0, 0, width, height);
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const step = width / (data.length - 1);
+            
+            data.forEach((value, i) => {
+                const x = i * step;
+                const y = height - ((value - min) / range) * (height - 4) - 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            
+            ctx.stroke();
+
+            const lastValue = data[data.length - 1];
+            const firstValue = data[0];
+            const change = ((lastValue - firstValue) / firstValue * 100).toFixed(1);
+            
+            ctx.beginPath();
+            ctx.fillStyle = change >= 0 ? '#4CAF50' : '#E57373';
+            ctx.arc(width - 2, height - ((lastValue - min) / range) * (height - 4) - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // ВАРИАНТ 6: Sparklines + метрики
+        function renderSparklines() {
+            const gridContainer = document.getElementById('metrics-grid');
+            const legendContainer = document.getElementById('chart-legend-custom');
+
+            const metrics = [
+                { label: 'Всего ТЗ', key: 'total', color: '#667eea' },
+                { label: 'В работе', key: 'inwork', color: '#FB8C00' },
+                { label: 'Завершено', key: 'done', color: '#4CAF50' },
+                { label: 'На паузе', key: 'paused', color: '#E57373' }
+            ];
+
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+
+            const inWorkCount = data.filter(d => !['Завершено', 'Подготовка и инициация'].includes(d.status)).length;
+            const doneCount = data.filter(d => d.status === 'Завершено').length;
+            const pausedCount = data.filter(d => d.notes.toLowerCase().includes('ждем') || d.notes.toLowerCase().includes('пауз')).length;
+
+            const values = {
+                total: data.length,
+                inwork: inWorkCount,
+                done: doneCount,
+                paused: pausedCount
+            };
+
+            gridContainer.innerHTML = metrics.map((metric, idx) => {
+                const sparkData = generateSparklineData();
+                const change = ((sparkData[sparkData.length - 1] - sparkData[0]) / sparkData[0] * 100).toFixed(1);
+                
+                return `
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">${metric.label}</span>
+                            <span class="metric-badge" style="background: ${metric.color}20; color: ${metric.color}">${metric.key === 'total' ? '' : '12 мес'}</span>
+                        </div>
+                        <div class="metric-value" style="color: ${metric.color}">${values[metric.key]}</div>
+                        <div class="metric-change ${parseFloat(change) >= 0 ? 'positive' : 'negative'}">
+                            <i class="fas fa-arrow-${parseFloat(change) >= 0 ? 'up' : 'down'}"></i>
+                            ${Math.abs(change)}% за месяц
+                        </div>
+                        <div class="sparkline-container">
+                            <canvas id="sparkline-${idx}" class="sparkline-canvas"></canvas>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            setTimeout(() => {
+                metrics.forEach((metric, idx) => {
+                    const sparkData = generateSparklineData();
+                    drawSparkline(`sparkline-${idx}`, sparkData, metric.color);
+                });
+            }, 100);
+
+            legendContainer.innerHTML = `
+                <div class="legend-item-custom">
+                    <span class="legend-dot-custom" style="background: #667eea"></span>
+                    <span>Всего</span>
+                </div>
+                <div class="legend-item-custom">
+                    <span class="legend-dot-custom" style="background: #FB8C00"></span>
+                    <span>В работе</span>
+                </div>
+                <div class="legend-item-custom">
+                    <span class="legend-dot-custom" style="background: #4CAF50"></span>
+                    <span>Завершено</span>
+                </div>
+            `;
+        }
+
+        // ВАРИАНТ 9: Мини-таблица
+        function renderTable() {
+            const tableBody = document.getElementById('table-body');
+
+            tableBody.innerHTML = data.map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <tr>
+                        <td style="font-weight: 500">${item.title}</td>
+                        <td>${item.number || '—'}</td>
+                        <td><span class="status-pill" style="background: ${status.color}20; color: ${status.color}">${item.status}</span></td>
+                        <td>
+                            <div class="progress-mini">
+                                <div class="progress-mini-fill" style="width: ${status.progress}%; background: ${status.color}"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="${item.link}" target="_blank" class="table-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 10: Горизонтальный скролл
+        function renderScroll() {
+            const container = document.getElementById('scroll-container');
+            container.innerHTML = data.map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="scroll-card">
+                        <div class="scroll-card-header">
+                            <span class="scroll-card-title">${item.title}</span>
+                            <span class="scroll-card-num">${item.number || '—'}</span>
+                        </div>
+                        <div class="scroll-progress">
+                            <div style="height: 100%; width: ${status.progress}%; background: ${status.color}; border-radius: 2px;"></div>
+                        </div>
+                        <span class="scroll-status" style="background: ${status.color}20; color: ${status.color}">${status.progress}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 11: Прогресс-круги
+        function renderProgressCircles() {
+            const grid = document.getElementById('circle-grid');
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+
+            grid.innerHTML = statuses.map(status => {
+                const count = statusCounts[status.name] || 0;
+                const deg = (count / data.length) * 360;
+                return `
+                    <div class="circle-item">
+                        <div class="circle-ring" style="--deg: ${deg}deg">
+                            <div class="circle-inner">${count}</div>
+                        </div>
+                        <div class="circle-label">${status.name.substring(0, 12)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 12: Санвей-диаграмма
+        function renderSunburst() {
+            const list = document.getElementById('sunburst-list');
+            const center = document.getElementById('sunburst-center');
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+
+            if (center) center.textContent = data.length;
+
+            list.innerHTML = Object.entries(statusCounts).map(([status, count]) => {
+                const statusInfo = getStatusInfo(status);
+                return `
+                    <div class="sunburst-item">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${statusInfo.color}"></span>
+                        <span style="flex: 1; font-size: 11px;">${status}</span>
+                        <span style="font-size: 11px; font-weight: bold; color: ${statusInfo.color}">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 13: Стек задач
+        function renderStack() {
+            const container = document.getElementById('stack-container');
+            const grouped = {};
+            statuses.forEach(s => grouped[s.name] = []);
+            data.forEach(item => grouped[item.status].push(item));
+
+            container.innerHTML = statuses.map(status => `
+                <div class="stack-column">
+                    <div class="stack-header" style="border-color: ${status.color}; color: ${status.color}">${status.name}</div>
+                    <div class="stack-items">
+                        ${(grouped[status.name] || []).map(item => `
+                            <div class="stack-item" title="${item.title}">${item.title.substring(0, 15)}</div>
+                        `).join('') || '<div style="font-size: 9px; color: #999; text-align: center;">—</div>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ВАРИАНТ 14: Пузырьки
+        function renderBubble() {
+            const container = document.getElementById('bubble-container');
+            const sizes = data.map(() => Math.floor(Math.random() * 40) + 40);
+            container.innerHTML = data.map((item, idx) => {
+                const status = getStatusInfo(item.status);
+                const size = sizes[idx] || 60;
+                return `
+                    <div class="bubble" style="width: ${size}px; height: ${size}px; background: ${status.color}" data-title="${item.title}">
+                        ${status.progress}%
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 15: Галочки
+        function renderChecklist() {
+            const container = document.getElementById('checklist');
+            container.innerHTML = data.map((item, idx) => `
+                <div class="checklist-item ${idx % 3 === 0 ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
+                    <div class="checklist-box">
+                        ${idx % 3 === 0 ? '<i class="fas fa-check" style="color: white; font-size: 10px;"></i>' : ''}
+                    </div>
+                    <span class="checklist-text">${item.title}</span>
+                </div>
+            `).join('');
+        }
+
+        // ВАРИАНТ 16: Столбчатая диаграмма
+        function renderBarChart() {
+            const chart = document.getElementById('bar-chart');
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+
+            chart.innerHTML = statuses.map(status => {
+                const count = statusCounts[status.name] || 0;
+                const height = count > 0 ? (count / Math.max(...Object.values(statusCounts))) * 140 + 20 : 20;
+                return `
+                    <div class="bar-group">
+                        <div class="bar" style="height: ${height}px; background: ${status.color}">
+                            <span class="bar-value">${count}</span>
+                        </div>
+                        <div class="bar-label">${status.name.substring(0, 8)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 17: Тепловая карта
+        function renderHeatmap() {
+            const grid = document.getElementById('heatmap-grid');
+            let html = '<div class="heatmap-header"></div>';
+            statuses.forEach(s => {
+                html += `<div class="heatmap-header" style="color: ${s.color}">${s.name.substring(0, 6)}</div>`;
+            });
+
+            data.forEach(item => {
+                const status = getStatusInfo(item.status);
+                html += `<div class="heatmap-row-label">${item.title.substring(0, 10)}</div>`;
+                statuses.forEach(s => {
+                    const isMatch = s.name === item.status;
+                    const alpha = isMatch ? 1 : 0.1;
+                    html += `<div class="heatmap-cell" style="background: ${s.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}" title="${s.name}">${isMatch ? '✓' : ''}</div>`;
+                });
+            });
+
+            grid.innerHTML = html;
+        }
+
+        // ВАРИАНТ 18: Звезды
+        function renderStars() {
+            const grid = document.getElementById('star-grid');
+            const icons = ['⭐', '🌟', '✨', '💫', '🌠'];
+
+            grid.innerHTML = data.slice(0, 10).map((item, idx) => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="star-row">
+                        <span class="star-icon ${idx < 3 ? 'active' : ''}">${icons[idx % 5]}</span>
+                        <div class="star-info">
+                            <div class="star-title">${item.title}</div>
+                            <div class="star-meta">${item.status} • ${item.number || '—'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 19: Прогресс-полосы
+        function renderStripes() {
+            const list = document.getElementById('stripe-list');
+            const total = data.length;
+
+            list.innerHTML = statuses.slice(0, 6).map(status => {
+                const count = data.filter(d => d.status === status.name).length;
+                const pct = Math.round((count / total) * 100);
+                return `
+                    <div class="stripe-item">
+                        <div class="stripe-header">
+                            <span>${status.name}</span>
+                            <span>${count} (${pct}%)</span>
+                        </div>
+                        <div class="stripe-bar">
+                            <div class="stripe-segment" style="width: ${pct}%; background: ${status.color}"></div>
+                            <div class="stripe-segment" style="width: ${100 - pct}%; background: #eee"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 20: Компактный список
+        function renderCompact() {
+            const list = document.getElementById('compact-list');
+            list.innerHTML = data.map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="compact-row">
+                        <span class="compact-dot" style="background: ${status.color}"></span>
+                        <span class="compact-title">${item.title}</span>
+                        <span class="compact-badge">${status.progress}%</span>
+                        <a href="${item.link}" target="_blank" class="compact-link">🔗</a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 21: Рейтинг
+        function renderRating() {
+            const container = document.getElementById('rating-container');
+            const sorted = [...data].sort((a, b) => getStatusInfo(b.status).progress - getStatusInfo(a.status).progress).slice(0, 6);
+            const stars = '★★★★★☆☆☆☆☆'.split('');
+
+            container.innerHTML = sorted.map((item, idx) => {
+                const status = getStatusInfo(item.status);
+                const rankStars = stars.slice(5 - Math.floor(status.progress / 20), 10 - Math.floor(status.progress / 20));
+                return `
+                    <div class="rating-card">
+                        <div class="rating-rank">#${idx + 1}</div>
+                        <div class="rating-title">${item.title}</div>
+                        <div class="rating-stars">${rankStars.join('')}</div>
+                        <div class="rating-meta">${status.progress}% • ${item.number || '—'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 22: Волна
+        function renderWave() {
+            const container = document.getElementById('wave-container');
+            const labels = document.getElementById('wave-labels');
+            const list = document.getElementById('wave-list');
+
+            container.innerHTML = statuses.slice(0, 8).map((status, idx) => {
+                const count = data.filter(d => d.status === status.name).length;
+                return `<div class="wave-bar" style="animation-delay: ${idx * 0.1}s; height: ${count * 10 + 20}%"></div>`;
+            }).join('');
+
+            labels.innerHTML = statuses.slice(0, 8).map(s => `<span class="wave-label">${s.name.substring(0, 6)}</span>`).join('');
+
+            list.innerHTML = data.slice(0, 8).map(item => {
+                const status = getStatusInfo(item.status);
+                return `
+                    <div class="wave-item">
+                        <span>${item.title}</span>
+                        <span style="color: ${status.color}">${status.progress}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ВАРИАНТ 23: Кольца статусов
+        function renderRings() {
+            const container = document.getElementById('ring-container');
+            const statusCounts = {};
+            data.forEach(item => {
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+            });
+
+            container.innerHTML = statuses.map(status => {
+                const count = statusCounts[status.name] || 0;
+                const pct = Math.round((count / data.length) * 100);
+                const offset = 220 - (pct * 2.2);
+                return `
+                    <div class="ring-item">
+                        <svg class="ring-svg" width="70" height="70" viewBox="0 0 70 70">
+                            <circle class="ring-bg" cx="35" cy="35" r="28"></circle>
+                            <circle class="ring-progress" cx="35" cy="35" r="28" stroke="${status.color}" stroke-dasharray="175" stroke-dashoffset="${offset}"></circle>
+                        </svg>
+                        <div class="ring-text">${count}</div>
+                        <div class="ring-label">${status.name.substring(0, 10)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Рендерим все варианты (вызываем сразу, так как скрипт в конце body)
+        try {
+            renderKanban();
+            renderCircular();
+            renderAccordion();
+            renderTimeline();
+            renderFlipCards();
+            renderSparklines();
+            renderTable();
+            renderScroll();
+            renderProgressCircles();
+            renderSunburst();
+            renderStack();
+            renderBubble();
+            renderChecklist();
+            renderBarChart();
+            renderHeatmap();
+            renderStars();
+            renderStripes();
+            renderCompact();
+            renderRating();
+            renderWave();
+            renderRings();
+        } catch(e) {
+            console.error('Render error:', e);
+            document.body.innerHTML += '<div style="padding:20px;background:#ffcccc;color:red">Ошибка: ' + e.message + '</div>';
+        }
+        
+        // Настройка кнопки Telegram
+        if (tg) {
+            tg.MainButton.setText('На главную');
+            tg.MainButton.onClick(() => {
+                window.location.href = 'index.html';
+            });
+            tg.MainButton.show();
+        }
+    </script>
+</body>
+</html>
